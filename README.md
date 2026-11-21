@@ -52,7 +52,7 @@ A profile can also say where test-ci-runner's launcher is on its cluster (`launc
 
 ## What starts the runner
 
-`gh200.yml` has two jobs. `request` runs on GitHub's own runner and, for `mvp`, asks the CI service for a runner; `run` waits in GitHub until that runner starts on Isambard-AI.
+`gh200.yml` has three jobs. `request` runs on GitHub's own runner and, for `mvp`, asks the CI service for a runner; `run` waits in GitHub until that runner starts on Isambard-AI; `cleanup`, on GitHub's runner again, removes the runner if no job used it.
 
 | `dispatch` | What starts the Slurm job | Human step | Runs as | Secrets |
 |---|---|---|---|---|
@@ -68,12 +68,14 @@ A profile can also say where test-ci-runner's launcher is on its cluster (`launc
 - `secrets: runner-admin-pat: ${{ secrets.RUNNER_ADMIN_PAT }}`: a fine-grained PAT for that repo only, with Administration: write and a short expiry;
 - `permissions: id-token: write` in the calling workflow, beside `contents: read`. Optional, but without it the CI service can't check where the job came from.
 
-The request job then posts a short Slurm script to the job API. It holds the profile's `#SBATCH` lines, the runner config, and `exec <the profile's launcher> …` (on the dev stack, `/opt/test-ci-runner/launcher/launch-runner.sh`).
+The request job first asks the job API whether it would accept the job (`POST /jobs/check`), and stops there if not, so a refused request leaves no runner registered on GitHub. Then it makes the runner config with the PAT and posts a short Slurm script to the job API. It holds the profile's `#SBATCH` lines, the runner config, and `exec <the profile's launcher> …` (on the dev stack, `/opt/test-ci-runner/launcher/launch-runner.sh`).
 With `id-token: write`, it also sends GitHub's OIDC token for the job (audience `isambard-ci`), so the job API records the repo, commit and run, as GitHub signed them, and the release page shows them. That needs ci-service's `feature/github_oidc` or later; without the permission, the origin token alone is sent, as before.
 Only the request job, which runs no code of yours, gets the token: the GH200 job is given `contents: read` alone, so your script can't get tokens for the CI service.
 
 To release it, log in to the submitter, then paste the job's address from the run's summary into your browser and give your origin token. (With a ci-service from before its job IDs, the task token is in the request step's log instead.)
-The runner config sits in that script, so it's stored in ci-service's database and shown on the release page: dev only.
+The runner config sits in that script, so it's stored in ci-service's database: dev only.
+
+A runner config registers a runner on GitHub as soon as it's made. If the job is then refused after all, the request job removes it. If the job is never released, the run is cancelled, or the job times out waiting, the `cleanup` job removes it, with the same PAT; a Slurm job that starts after that stops at once. A runner that takes its job removes itself.
 
 ## Layout
 
@@ -82,8 +84,10 @@ The runner config sits in that script, so it's stored in ci-service's database a
 request-runner/               the request job's action (mvp now; service in Phase B)
 request-runner/profiles.json  the profiles: Slurm options and time limits. The only
                               copy; test-ci-runner reads it from here
+remove-runner/                the cleanup job's action: removes a runner no job used
 examples/                     a caller workflow and a test script
-tests/                        shellcheck, actionlint, the profile check, request-runner
+tests/                        shellcheck, actionlint, the profile check, request-runner,
+                              remove-runner
 ```
 
 ## Versioning

@@ -15,3 +15,4 @@ jobs:
           echo "$PWD" >> "$GITHUB_PATH"
       - run: tests/lint.sh
       - run: tests/request-runner.sh
+      - run: tests/remove-runner.sh
