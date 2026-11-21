@@ -34,6 +34,9 @@ outputs:
   release-url:
     description: Where to release this run
     value: ${{ steps.request.outputs.release-url }}
+  runner-id:
+    description: The runner made for this request, for gh200.yml's cleanup job to remove if no job used it
+    value: ${{ steps.request.outputs.runner-id }}
 runs:
   using: composite
   steps:

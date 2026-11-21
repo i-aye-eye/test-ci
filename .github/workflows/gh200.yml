@@ -63,6 +63,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       release-url: ${{ steps.request.outputs.release-url }}
+      runner-id: ${{ steps.request.outputs.runner-id }}
     steps:
       - id: request
         uses: i-aye-eye/test-ci/request-runner@v0
@@ -112,3 +113,19 @@ jobs:
         run: |
           read -ra args <<< "$ARGS"
           bash "$SCRIPT" "${args[@]}"
+
+  # Removes this job's runner from GitHub if no job used it: the job was never released,
+  # the run was cancelled, or it timed out waiting. A runner that took its job has
+  # removed itself already. A Slurm job that starts after this finds no registration
+  # and stops at once. Never fails the run.
+  cleanup:
+    needs: [request, run]
+    if: always() && needs.request.outputs.runner-id != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: i-aye-eye/test-ci/remove-runner@v0
+        with:
+          runner-admin-pat: ${{ secrets.runner-admin-pat }}
+          runner-id: ${{ needs.request.outputs.runner-id }}
