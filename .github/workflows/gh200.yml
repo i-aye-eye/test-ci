@@ -57,10 +57,14 @@ on:
 
 jobs:
   # Runs on GitHub's own runner for a few seconds and asks the CI service for a runner.
-  # Skipped for manual and automatic, and for pull requests from forks.
+  # Skipped for manual and automatic, and for pull requests from forks. Both jobs run
+  # only on push, pull_request, workflow_dispatch and schedule, the job API's list: not
+  # on events someone outside the repo can start, such as pull_request_target or
+  # issue_comment. tests/check-events.sh keeps the two lists the same.
   request:
     if: >-
       (inputs.dispatch == 'mvp' || inputs.dispatch == 'service') &&
+      contains(fromJSON('["push","pull_request","workflow_dispatch","schedule"]'), github.event_name) &&
       (github.event_name != 'pull_request' ||
        github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
@@ -87,6 +91,7 @@ jobs:
       contents: read
     if: >-
       ${{ !cancelled() &&
+          contains(fromJSON('["push","pull_request","workflow_dispatch","schedule"]'), github.event_name) &&
           (github.event_name != 'pull_request' ||
            github.event.pull_request.head.repo.full_name == github.repository) &&
           (needs.request.result == 'success' ||

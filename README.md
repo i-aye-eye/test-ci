@@ -31,6 +31,8 @@ jobs:
 
 `dispatch` is required. Leave it out and GitHub refuses the run straight away ("Input dispatch is required"). It used to default to `manual`, where nothing starts a runner unless an operator runs test-ci-runner's dispatcher, so the job waited in GitHub for 24 hours and was then cancelled.
 
+**When it runs.** Only on `push`, `pull_request`, `workflow_dispatch` and `schedule`, the events the CI service accepts. Pull requests from forks are skipped. On any other event, such as `pull_request_target` or `issue_comment`, which people outside your repo can start, both jobs are skipped, so call it from a workflow triggered by the four above.
+
 A full example is in [`examples/gh200-tests.yml`](examples/gh200-tests.yml), with a test script in [`examples/ci/gh200.sh`](examples/ci/gh200.sh). A matrix over `profile` gives one job per profile.
 
 ## Inputs

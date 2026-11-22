@@ -1,5 +1,6 @@
 #!/bin/bash
-# Runs shellcheck on every script, actionlint on the workflows, and the profile check.
+# Runs shellcheck on every script, actionlint on the workflows, and the profile and
+# event checks.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root"
@@ -10,3 +11,4 @@ else
   echo "actionlint not installed: skipped"
 fi
 tests/check-profiles.sh
+tests/check-events.sh
