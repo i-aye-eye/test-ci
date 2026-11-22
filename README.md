@@ -29,7 +29,7 @@ jobs:
       runner-admin-pat: ${{ secrets.RUNNER_ADMIN_PAT }}
 ```
 
-Set `dispatch` every time. It defaults to `manual`, which starts nothing unless an operator runs test-ci-runner's dispatcher, so the job would wait in GitHub for 24 hours and then be cancelled.
+`dispatch` is required. Leave it out and GitHub refuses the run straight away ("Input dispatch is required"). It used to default to `manual`, where nothing starts a runner unless an operator runs test-ci-runner's dispatcher, so the job waited in GitHub for 24 hours and was then cancelled.
 
 A full example is in [`examples/gh200-tests.yml`](examples/gh200-tests.yml), with a test script in [`examples/ci/gh200.sh`](examples/ci/gh200.sh). A matrix over `profile` gives one job per profile.
 
@@ -41,7 +41,7 @@ A full example is in [`examples/gh200-tests.yml`](examples/gh200-tests.yml), wit
 | `script` | required | Path to the script in your repo, run from the repo's root after checkout |
 | `args` | `""` | Arguments for the script |
 | `image` | `""` | Run the script in this container image with Apptainer and the GPU, for example `ubuntu:24.04` |
-| `dispatch` | `manual` | How the runner starts (below) |
+| `dispatch` | required | How the runner starts (below) |
 
 ## Profiles
 
