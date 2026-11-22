@@ -6,6 +6,7 @@
 #       with:
 #         profile: gh200-1gpu
 #         script: ci/gh200.sh
+#         dispatch: mvp
 #
 # The GH200 job runs on a short-lived runner: one runner, in one Slurm job, for
 # this one job, labelled test-ci-<profile> and test-ci-run-<run id>. What starts that
@@ -35,10 +36,13 @@ on:
         description: Optional. Run the script in this container image with Apptainer, for example ubuntu:24.04
         type: string
         default: ""
+      # Required, so a call without it fails at once. It used to default to manual,
+      # where nothing starts a runner unless someone runs test-ci-runner's dispatcher,
+      # so the job waited 24 hours and was cancelled
       dispatch:
-        description: "How the runner starts: manual (Phase 1), mvp (dev, Phase A), service (Phase B) or automatic"
+        description: "Required. How the runner starts: manual (by hand), mvp (ci-service's release page), service (Phase B2, with the GitHub App) or automatic"
         type: string
-        default: manual
+        required: true
     secrets:
       origin-token:
         description: The repo's origin token for the CI service's job API (mvp, service)
