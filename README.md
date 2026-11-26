@@ -4,7 +4,7 @@ Run a script from your GitHub repo on Isambard-AI's GH200 nodes, using GitHub Ac
 
 - Each CI job gets one runner, in one Slurm job, which exits when the CI job ends.
 - There's no mirror of your repo, and no runner left running on the cluster.
-- `v1` uses the CI service's GitHub App (`dispatch: service`): your repo needs no secrets. `v0` had the older `dispatch: mvp`, with a PAT and an origin token, which the CI service no longer takes.
+- `v1` uses the CI service's GitHub App (`dispatch: service`): your repo needs no secrets. `v0` has the older `dispatch: mvp`, with a PAT and an origin token, which the GitHub App replaces.
 
 This repo is what you call from your workflow. [test-ci-runner](https://github.com/i-aye-eye/test-ci-runner) is what runs on the cluster.
 
@@ -116,6 +116,6 @@ There's no `cleanup` job: nothing makes a runner before the release. A runner ma
 Breaking changes mean a new major version.
 
 - `v1`: `dispatch: service`, with the CI service's GitHub App. No secrets.
-- `v0`: `dispatch: mvp`, with a PAT and an origin token, and `manual`. The tag stays, but the CI service no longer takes `mvp`.
+- `v0`: `dispatch: mvp`, with a PAT and an origin token, and `manual`. The tag keeps `mvp`'s actions; `main` no longer has them.
 
 A profile is changed in `profiles/profiles.json` only: the CI service and test-ci-runner's dispatcher read it at the version of `gh200.yml` each run uses.
