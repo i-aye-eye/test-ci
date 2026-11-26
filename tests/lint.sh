@@ -4,7 +4,7 @@
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 cd "$root"
-shellcheck -x -P SCRIPTDIR request-runner/*.sh remove-runner/*.sh tests/*.sh examples/ci/*.sh
+shellcheck -x -P SCRIPTDIR tests/*.sh examples/ci/*.sh
 if command -v actionlint >/dev/null; then
   actionlint .github/workflows/*.yml
 else

@@ -1,6 +1,6 @@
 #!/bin/bash
 # gh200.yml's two jobs, request and run, must allow the same events: push,
-# pull_request, workflow_dispatch and schedule, the job API's list. Not
+# pull_request, workflow_dispatch and schedule, the CI service's list. Not
 # pull_request_target, issue_comment or anything else someone outside the repo can start.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)

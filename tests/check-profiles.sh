@@ -1,5 +1,5 @@
 #!/bin/bash
-# Checks request-runner/profiles.json, the only copy of the profiles: each profile
+# Checks profiles/profiles.json, the only copy of the profiles: each profile
 # has job_minutes, runner_minutes and slurm, uses only the Slurm options
 # test-ci-runner accepts, and keeps job < runner < Slurm minutes; and gh200.yml's
 # timeout-minutes map matches it. Needs jq.
@@ -9,12 +9,12 @@
 #   runner_minutes  how long the launcher lets the runner live
 #   slurm           only --nodes=N, --gpus=N and --time=HH:MM:SS; --time is required
 #   launcher        optional: where test-ci-runner's launch-runner.sh is on that
-#                   cluster, an absolute path. Without it, request-runner's default
+#                   cluster, an absolute path. Without it, the CI service's default
 # job < runner < Slurm --time means GitHub stops the job first, then the launcher
 # stops the runner, and Slurm never has to kill it.
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
-file=$root/request-runner/profiles.json
+file=$root/profiles/profiles.json
 die() { echo "profiles.json: $*" >&2; exit 1; }
 
 jq -e 'type == "object" and length > 0 and all(.[];

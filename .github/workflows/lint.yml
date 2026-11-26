@@ -14,5 +14,3 @@ jobs:
           bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
           echo "$PWD" >> "$GITHUB_PATH"
       - run: tests/lint.sh
-      - run: tests/request-runner.sh
-      - run: tests/remove-runner.sh
