@@ -51,7 +51,7 @@ jobs:
   # Runs on GitHub's own runner for a few seconds, and only writes where to release the
   # run to the run's summary, or stops a dispatch v1 doesn't have, such as mvp. Skipped
   # for manual and automatic, and for pull requests from forks. Both jobs run
-  # only on push, pull_request, workflow_dispatch and schedule, the job API's list: not
+  # only on push, pull_request, workflow_dispatch and schedule, the CI service's list: not
   # on events someone outside the repo can start, such as pull_request_target or
   # issue_comment. tests/check-events.sh keeps the two lists the same.
   request:
@@ -121,7 +121,7 @@ jobs:
       ${{ fromJSON(inputs.dispatch == 'automatic'
           && format('["test-ci-{0}"]', inputs.profile)
           || format('["test-ci-{0}","test-ci-run-{1}"]', inputs.profile, github.run_id)) }}
-    # from request-runner/profiles.json (job_minutes); tests/check-profiles.sh keeps them in step
+    # from profiles/profiles.json (job_minutes); tests/check-profiles.sh keeps them in step
     timeout-minutes: ${{ fromJSON('{"gh200-1gpu":50,"gh200-4gpu":110,"dev-cpu":20}')[inputs.profile] }}
     env:
       SCRIPT: ${{ inputs.script }}
