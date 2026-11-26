@@ -1,9 +1,11 @@
 # Copy to .github/workflows/gh200-tests.yml in your repo, and ci/gh200.sh beside it.
 #
-# Phase 1 (now): dispatch: manual. Start the runner from your laptop with
-#   test-ci-runner's tools/dispatch-runner.sh --watch OWNER/REPO
-# Phase A (dev): dispatch: mvp, with the two secrets, the BRICS_CI_URL variable and
-#   id-token: write, so the CI service knows which repo, commit and run a job came from.
+# dispatch: service: the CI service's GitHub App installed by your repo's organisation,
+#   the repo registered with the CI service, and the BRICS_CI_SUBMITTER_URL variable.
+#   No secrets, no id-token.
+# dispatch: manual: start the runner from your laptop with test-ci-runner's
+#   tools/dispatch-runner.sh --watch OWNER/REPO
+# dispatch: mvp (a PAT and an origin token) is v0's.
 name: GH200 tests
 on:
   push:
@@ -13,25 +15,21 @@ on:
 
 permissions:
   contents: read
-  # id-token: write                      # dispatch: mvp: send GitHub's token for the job
 
 jobs:
   gh200:
-    uses: i-aye-eye/test-ci/.github/workflows/gh200.yml@v0
+    uses: i-aye-eye/test-ci/.github/workflows/gh200.yml@v1
     with:
       profile: gh200-1gpu
       script: ci/gh200.sh
-      dispatch: manual
+      dispatch: service
       # image: ubuntu:24.04                # run the script in a container instead
-    # secrets:                             # dispatch: mvp only
-    #   origin-token: ${{ secrets.BRICS_CI_ORIGIN_TOKEN }}
-    #   runner-admin-pat: ${{ secrets.RUNNER_ADMIN_PAT }}
 
   # The same script, in a container image
   gh200-image:
-    uses: i-aye-eye/test-ci/.github/workflows/gh200.yml@v0
+    uses: i-aye-eye/test-ci/.github/workflows/gh200.yml@v1
     with:
       profile: gh200-1gpu
       script: ci/gh200.sh
       image: ubuntu:24.04
-      dispatch: manual
+      dispatch: service

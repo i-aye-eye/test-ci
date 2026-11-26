@@ -4,7 +4,7 @@ description: >-
   Runs on GitHub's own runner, in gh200.yml's request job, or in your own workflow (the advanced form).
 inputs:
   dispatch:
-    description: "mvp (dev, Phase A) or service (Phase B)"
+    description: "mvp (dev, Phase A). service needs no request-runner: gh200.yml links to the release page"
     required: true
   profile:
     description: Resources on Isambard-AI, for example gh200-1gpu
