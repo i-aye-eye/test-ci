@@ -203,6 +203,7 @@ from_copy() {   # from_copy <launcher input> <profile>
   || fail "the launcher input: $(tail -1 "$t/job.sh")"
 echo "ok - mvp: the launcher input, else the profile's, else the dev stack's"
 
-if request gh200-1gpu 1 service; then fail "service should fail for now"; fi
+if request gh200-1gpu 1 service; then fail "service needs no request-runner"; fi
+grep -q "service needs no request-runner" "$t/log" || fail "service's message: $(cat "$t/log")"
 if request no-such-profile 1; then fail "an unknown profile should fail"; fi
-echo "ok - refuses dispatch: service (not built) and unknown profiles"
+echo "ok - refuses dispatch: service (gh200.yml handles it) and unknown profiles"

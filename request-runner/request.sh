@@ -23,7 +23,8 @@
 # GitHub. If the job still isn't added, it removes the runner it made. gh200.yml's
 # cleanup job removes the runner later if no job used it.
 #
-# dispatch: service (Phase B) is not built yet.
+# dispatch: service needs no request: the CI service's GitHub App finds the run itself,
+# and gh200.yml's request job only writes where to release it.
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 profiles=$here/profiles.json
@@ -42,7 +43,7 @@ launcher=${launcher:-/opt/test-ci-runner/launcher/launch-runner.sh}
 mapfile -t SBATCH_ARGS < <(jq -r '.slurm[]' <<<"$p")
 case ${DISPATCH:-} in
   mvp) ;;
-  service) fail "dispatch: service arrives with Phase B. Use mvp on dev, or manual." ;;
+  service) fail "dispatch: service needs no request-runner: call gh200.yml, whose request job links to the release page" ;;
   *) fail "request-runner handles dispatch mvp or service, not '${DISPATCH:-}'" ;;
 esac
 [ -n "${URL:-}" ] || fail "No job API URL: set the BRICS_CI_URL variable in the repo"

@@ -12,10 +12,13 @@
 # this one job, labelled test-ci-<profile> and test-ci-run-<run id>. What starts that
 # runner depends on `dispatch` (see README.md).
 #
-# With dispatch: mvp or service, grant `id-token: write` in the calling workflow too:
-# the request job then sends GitHub's OIDC token, so the CI service knows which repo,
-# commit and run the job came from. Only the request job gets it: the GH200 job runs
-# your code, so it's given `contents: read` alone.
+# With dispatch: mvp, grant `id-token: write` in the calling workflow too: the request
+# job then sends GitHub's OIDC token, so the CI service knows which repo, commit and run
+# the job came from. Only the request job gets it: the GH200 job runs your code, so it's
+# given `contents: read` alone.
+#
+# With dispatch: service, the CI service's GitHub App finds the run itself, so the
+# request job only says where to release it: no secrets, and no id-token.
 name: gh200
 on:
   workflow_call:
@@ -45,7 +48,7 @@ on:
         required: true
     secrets:
       origin-token:
-        description: The repo's origin token for the CI service's job API (mvp, service)
+        description: The repo's origin token for the CI service's job API (mvp only)
         required: false
       runner-admin-pat:
         description: "A fine-grained PAT for the repo with Administration: write (mvp only, dev only)"
@@ -56,7 +59,8 @@ on:
         value: ${{ jobs.request.outputs.release-url }}
 
 jobs:
-  # Runs on GitHub's own runner for a few seconds and asks the CI service for a runner.
+  # Runs on GitHub's own runner for a few seconds. With mvp it asks the CI service for a
+  # runner; with service it only writes where to release the run to the run's summary.
   # Skipped for manual and automatic, and for pull requests from forks. Both jobs run
   # only on push, pull_request, workflow_dispatch and schedule, the job API's list: not
   # on events someone outside the repo can start, such as pull_request_target or
@@ -70,10 +74,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      release-url: ${{ steps.request.outputs.release-url }}
+      release-url: ${{ steps.request.outputs.release-url || steps.link.outputs.release-url }}
       runner-id: ${{ steps.request.outputs.runner-id }}
     steps:
       - id: request
+        if: inputs.dispatch == 'mvp'
         uses: i-aye-eye/test-ci/request-runner@v0
         with:
           dispatch: ${{ inputs.dispatch }}
@@ -81,6 +86,34 @@ jobs:
           origin-token: ${{ secrets.origin-token }}
           runner-admin-pat: ${{ secrets.runner-admin-pat }}
           url: ${{ vars.BRICS_CI_URL }}
+
+      # service: the CI service finds this run itself, with its GitHub App, and starts
+      # the runner when someone releases the run. The link is to the run's page on the
+      # submitter, from the BRICS_CI_SUBMITTER_URL variable. It's shown as code, not a
+      # link: a link clicked on github.com wouldn't carry the submitter's login
+      - id: link
+        if: inputs.dispatch == 'service'
+        env:
+          SUBMITTER: ${{ vars.BRICS_CI_SUBMITTER_URL }}
+          PROFILE: ${{ inputs.profile }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          if [ -n "$SUBMITTER" ]; then
+            url="${SUBMITTER%/}/run?id=$RUN_ID&attempt=$RUN_ATTEMPT"
+            echo "release-url=$url" >> "$GITHUB_OUTPUT"
+            echo "Release this run at $url"
+            where="Log in to the submitter, then copy this into your browser: \`$url\`"
+          else
+            echo "::notice::Set the BRICS_CI_SUBMITTER_URL variable in the repo to link to the release page here"
+            where="It's under \"Runs to release\" on the CI service's submitter."
+          fi
+          {
+            echo "### test-ci"
+            echo "The $PROFILE job waits for someone in a BriCS project this repo is registered to, to release run $RUN_ID (attempt $RUN_ATTEMPT) on Isambard-AI."
+            echo "$where"
+            echo "GitHub cancels the job if no runner starts within 24 hours."
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # Waits in GitHub until its runner starts on Isambard-AI, then runs there.
   run:
@@ -123,8 +156,9 @@ jobs:
           read -ra args <<< "$ARGS"
           bash "$SCRIPT" "${args[@]}"
 
-  # Removes this job's runner from GitHub if no job used it: the job was never released,
-  # the run was cancelled, or it timed out waiting. A runner that took its job has
+  # mvp: removes this job's runner from GitHub if no job used it: the job was never
+  # released, the run was cancelled, or it timed out waiting. (service: the request job
+  # makes no runner, so this is skipped; the CI service makes them only at release.) A runner that took its job has
   # removed itself already. A Slurm job that starts after this finds no registration
   # and stops at once. Never fails the run.
   cleanup:

@@ -4,7 +4,7 @@ Run a script from your GitHub repo on Isambard-AI's GH200 nodes, using GitHub Ac
 
 - Each CI job gets one runner, in one Slurm job, which exits when the CI job ends.
 - There's no mirror of your repo, and no runner left running on the cluster.
-- For now, your repo needs a PAT, until the GitHub App replaces it.
+- With `dispatch: mvp` your repo needs a PAT. With `service`, the CI service's GitHub App replaces it, and your repo needs no secrets.
 
 This repo is what you call from your workflow. [test-ci-runner](https://github.com/i-aye-eye/test-ci-runner) is what runs on the cluster.
 
@@ -71,15 +71,15 @@ A profile can also say where test-ci-runner's launcher is on its cluster (`launc
 
 `gh200.yml` has three jobs:
 
-- `request` runs on GitHub's own runner and, for `mvp`, asks the CI service for a runner;
+- `request` runs on GitHub's own runner and, for `mvp`, asks the CI service for a runner; for `service`, it only says where to release the run;
 - `run` waits in GitHub until that runner starts on Isambard-AI;
-- `cleanup`, on GitHub's runner again, removes the runner if no job used it.
+- `cleanup`, on GitHub's runner again, removes the runner if no job used it (`mvp` only).
 
 | `dispatch` | What starts the Slurm job | Human step | Runs as | Secrets |
 |---|---|---|---|---|
 | `manual` | test-ci-runner's dispatcher, on an operator's laptop | None | Whoever dispatches | None |
 | `mvp` | ci-service's submitter, after a release | Release on the submitter page | The releaser's `user.project` | `origin-token`, `runner-admin-pat` |
-| `service` (with the GitHub App) | Not built yet | Release | The releaser's `user.project` | `origin-token` |
+| `service` (with the GitHub App) | ci-service, after a release of the whole run | Release on the submitter's runs page | The releaser's `user.project` | None |
 | `automatic` | Not built yet | None | The account registered for the repo | None |
 
 ### `mvp`
@@ -103,6 +103,25 @@ Only the request job gets the token. The GH200 job gets `contents: read` alone, 
 To release it, log in to the submitter, open the job's address from the run's summary, and give your origin token. The runner config is in the script, so ci-service stores it; the job page hides it.
 
 A runner config registers a runner on GitHub as soon as it's made. If the job is then refused after all, the request job removes it. If the job is never released, the run is cancelled, or the job times out waiting, the `cleanup` job removes it, with the same PAT; a Slurm job that starts after that stops at once. A runner that takes its job removes itself.
+
+### `service`
+
+The CI service's GitHub App replaces the PAT, the origin token and the request. The calling repo needs:
+
+- to be owned by an organisation that has installed the CI service's GitHub App on it;
+- to be registered with the CI service as an App repo, to a BriCS project;
+- the `BRICS_CI_SUBMITTER_URL` variable: the CI service's submitter, for the link to the release page. Without it, the run's summary says where to find the run, without a link.
+
+No secrets, and no `id-token: write`.
+
+What happens:
+
+1. The `request` job writes the link to the run's page on the submitter to the run's summary, and does nothing else. The `run` job waits in GitHub, labelled with its profile and the run.
+2. The CI service polls the repo with the App. Within about 20 seconds it finds the waiting run and keeps it, if it's the repo's own (not a fork's), came from one of the four events above, and calls this workflow at a version the service trusts.
+3. Someone in a project the repo is registered to logs in to the submitter, opens the link (or "Runs to release"), and releases the whole run as one of their project's accounts.
+4. The CI service makes a runner for each waiting job, only then, in the organisation's runner group, which only this workflow's jobs can use. It submits a Slurm job with the profile's settings, and the runner takes the job.
+
+The `cleanup` job is skipped: nothing makes a runner before the release.
 
 ## Layout
 
